@@ -1,0 +1,10 @@
+README.md
+setup.py
+veclib/__init__.py
+veclib/spacetime.py
+veclib/tensor.py
+veclib.egg-info/PKG-INFO
+veclib.egg-info/SOURCES.txt
+veclib.egg-info/dependency_links.txt
+veclib.egg-info/requires.txt
+veclib.egg-info/top_level.txt

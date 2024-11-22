@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: veclib
+Version: 0.1
+Summary: A library for symbolic tensor calculus in general relativity.
+Author: Niels Slotboom
+Requires-Python: >=3.7
