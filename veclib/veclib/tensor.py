@@ -84,19 +84,30 @@ class Tensor:
         index_str = "".join("'" if i == 1 else "," for i in self.indices)
         return f"{self.name}{index_str}"
 
-    def show_component(self, indices): 
+    def show_component(self, indices = []): 
         if len(indices) != self.rank:
             raise ValueError(f"Invalid index count {len(indices)} for rank {self.rank} tensor.")
         
-        component_string = sp.latex(self.name)
-        for n, i in enumerate(indices):
-            if self.indices[n] == -1:  # Covariant index
-                component_string += f"\\!\\,_{{{sp.latex(spacetime.coords[i])}}}"
-            else:  # Contravariant index
-                component_string += f"\\!\\,^{{{sp.latex(spacetime.coords[i])}}}"
-        
-        # Use SymPy's Math class to render as LaTeX in Jupyter
-        display(Math(component_string + " = " + sp.latex(self.components[indices])))
+        if self.rank == 0:
+            display(Math(self.name + " = " + sp.latex(self.components)))
+        else:
+            component_string = sp.latex(self.name)
+            for n, i in enumerate(indices):
+                if self.indices[n] == -1:  # Covariant index
+                    component_string += f"\\!\\,_{{{sp.latex(spacetime.coords[i])}}}"
+                else:  # Contravariant index
+                    component_string += f"\\!\\,^{{{sp.latex(spacetime.coords[i])}}}"
+            
+            # Use SymPy's Math class to render as LaTeX in Jupyter
+            display(Math(component_string + " = " + sp.latex(self.components[indices])))
+
+    def show_components(self):
+        if self.rank == 0:
+            self.show_component()
+        else:
+            for i in itertools.product(range(spacetime.dim), repeat = self.rank):
+                if self.components[i] != 0:
+                    self.show_component([*i])
 
     def __add__(self, other):
         if not isinstance(other, Tensor):
