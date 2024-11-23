@@ -84,21 +84,38 @@ class Tensor:
         index_str = "".join("'" if i == 1 else "," for i in self.indices)
         return f"{self.name}{index_str}"
 
-    def show_component(self, indices = []): 
+    def show_component(self, indices=[]):
+        from sympy.printing.latex import greek_letters_set  # To identify Greek letters
+
         if len(indices) != self.rank:
             raise ValueError(f"Invalid index count {len(indices)} for rank {self.rank} tensor.")
         
+        def ensure_italic(symbol):
+            """Ensure all symbols are italicised in LaTeX output."""
+            # If it's a Greek letter, let SymPy handle it as usual
+            if str(symbol) in greek_letters_set:
+                return sp.latex(sp.Symbol(symbol))
+            # Otherwise, wrap in \mathit{} to enforce italics
+            return f"\\mathit{{{symbol}}}"
+
+        bracketed_name = ensure_italic(self.name)
+        
+        #sacred conditional, do not change (took me 20mins to fix)
+        if len(self.name) > 1 and bracketed_name.count("\\") != 2:
+            bracketed_name = "[" + bracketed_name + "]"
+
         if self.rank == 0:
-            display(Math(self.name + " = " + sp.latex(self.components)))
+            display(Math(bracketed_name + " = " + sp.latex(self.components)))
         else:
-            component_string = sp.latex(self.name)
+            component_string = bracketed_name
+
             for n, i in enumerate(indices):
                 if self.indices[n] == -1:  # Covariant index
                     component_string += f"\\!\\,_{{{sp.latex(spacetime.coords[i])}}}"
                 else:  # Contravariant index
                     component_string += f"\\!\\,^{{{sp.latex(spacetime.coords[i])}}}"
             
-            # Use SymPy's Math class to render as LaTeX in Jupyter
+            # Render the LaTeX string
             display(Math(component_string + " = " + sp.latex(self.components[indices])))
 
     def show_components(self):
@@ -301,3 +318,9 @@ class Tensor:
             for i in range(spacetime.dim):
                 result[i] = sp.diff(self.components, spacetime.coords[i]).simplify()
         return Tensor(f"∂{self.name}", result, [-1] + self.indices)
+
+    def covariant_gradient():
+        spacetime.ensure_christoffel()
+
+        if self.rank == 0:
+            return Tensor(f"∇{self.name}",self.partial_gradient())
