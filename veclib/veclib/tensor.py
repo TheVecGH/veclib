@@ -1,6 +1,7 @@
 import sympy as sp
 import veclib.spacetime as spacetime
 import itertools
+from IPython.display import display, Math
 
 class Tensor: 
     def __init__(self, name, components, indices = []): 
@@ -30,7 +31,6 @@ class Tensor:
             self.components = sp.MutableDenseNDimArray(components.components)
             self.rank = components.rank
             self.indices = components.indices
-            print(self.rank, self.indices)
         else: 
             self.components = sp.MutableDenseNDimArray(components)
             self.rank = self.components.rank()
@@ -45,6 +45,7 @@ class Tensor:
         if len(indices) != 0:
             if not all(i in (-1,1) for i in indices):
                 raise ValueError("Indices must be a list of -1 (lower) or 1 (upper).")
+    
 
 
     def __repr__(self):
@@ -82,6 +83,20 @@ class Tensor:
         """
         index_str = "".join("'" if i == 1 else "," for i in self.indices)
         return f"{self.name}{index_str}"
+
+    def show_component(self, indices): 
+        if len(indices) != self.rank:
+            raise ValueError(f"Invalid index count {len(indices)} for rank {self.rank} tensor.")
+        
+        component_string = sp.latex(self.name)
+        for n, i in enumerate(indices):
+            if self.indices[n] == -1:  # Covariant index
+                component_string += f"\\!\\,_{{{sp.latex(spacetime.coords[i])}}}"
+            else:  # Contravariant index
+                component_string += f"\\!\\,^{{{sp.latex(spacetime.coords[i])}}}"
+        
+        # Use SymPy's Math class to render as LaTeX in Jupyter
+        display(Math(component_string + " = " + sp.latex(self.components[indices])))
 
     def __add__(self, other):
         if not isinstance(other, Tensor):
@@ -185,7 +200,6 @@ class Tensor:
 
         if self.indices[index_pos] == 1:
             #contraction with the metric
-            print(f"self.rank = {self.rank}")
             if self.rank > 1:
                 new_components = sp.MutableDenseNDimArray.zeros(*self.components.shape)
                 new_indices = self.indices.copy()

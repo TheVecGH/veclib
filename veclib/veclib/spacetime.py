@@ -33,7 +33,9 @@ def set_metric_and_coordinates(g, coords_input):
     christoffel = None #clearing christoffel symbols
 
 def ensure_christoffel():
-
+    """
+        Checks whether Christoffel symbols have already been computed, if not, computes them and stores in spacetime.christoffel.
+    """
     global christoffel
 
     if metric == None:
