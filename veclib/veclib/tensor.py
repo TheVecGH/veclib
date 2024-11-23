@@ -65,7 +65,7 @@ class Tensor:
         
         latex_components = sp.latex(self.components)
         if len(self.name) > 1:
-            return f"$({self.name}){index_str} = {latex_components}$"
+            return f"$[{self.name}]{index_str} = {latex_components}$"
         else:
             return f"${self.name}{index_str} = {latex_components}$"
 
@@ -83,8 +83,53 @@ class Tensor:
         index_str = "".join("'" if i == 1 else "," for i in self.indices)
         return f"{self.name}{index_str}"
 
-    def get_components(self):
-        return self.components
+    def __add__(self, other):
+        if not isinstance(other, Tensor):
+            raise TypeError("Can only add another Tensor")
+        if self.indices != other.indices:
+            raise ValueError("Cannot add tensors with different index types")
+        if self.components.shape != other.components.shape:
+            raise ValueError("Cannot add tensors with different shapes")
+
+        # Perform component-wise addition
+        new_components = self.components + other.components
+
+        return Tensor(f"({self.name} + {other.name})", new_components, self.indices)
+
+    def __sub__(self, other):
+        if not isinstance(other, Tensor):
+            raise TypeError("Can only subtract another Tensor")
+        if self.indices != other.indices:
+            raise ValueError("Cannot subtract tensors with different index types")
+        if self.components.shape != other.components.shape:
+            raise ValueError("Cannot subtract tensors with different shapes")
+
+        # Perform component-wise subtraction
+        new_components = self.components - other.components
+
+        return Tensor(f"({self.name} - {other.name})", new_components, self.indices)
+
+    def __mul__(self, other):
+        if isinstance(other, Tensor):
+            # Tensor product
+            new_components = sp.MutableDenseNDimArray(
+                sp.tensorproduct(self.components, other.components)
+            )
+            new_indices = self.indices + other.indices
+            product_symbol = ""
+            if not (other.rank == 0 or self.rank == 0):
+                product_symbol = "⊗"
+            return Tensor(f"{self.name}{product_symbol}{other.name}", new_components, new_indices)
+        elif isinstance(other, (int, float, sp.Basic)):
+            # Element-wise scalar multiplication
+            new_components = self.components * other
+            return Tensor(f"({other}{self.name})", new_components, self.indices)
+        else:
+            raise TypeError(f"Cannot multiply Tensor with type {type(other)}")
+
+    def __rmul__(self, other):
+        # For scalar * tensor (reverse multiplication)
+        return self.__mul__(other)
 
     def raise_index(self, index_pos = 0):
         """
@@ -102,13 +147,10 @@ class Tensor:
             raise ValueError(f"index_pos {index_pos} exceeds tensor rank {self.rank}")
 
         if self.indices[index_pos] == -1:
-            new_components = sp.zeros(*self.components.shape)
-            new_indices = self.indices.copy()
-            new_indices[index_pos] = 1
 
             #contraction with the metric
             if self.rank > 1:
-                new_components = sp.zeros(*self.components.shape)
+                new_components = sp.MutableDenseNDimArray.zeros(*self.components.shape)
                 new_indices = self.indices.copy()
                 new_indices[index_pos] = 1
                 for i in itertools.product(range(spacetime.dim), repeat = self.rank):
@@ -145,7 +187,7 @@ class Tensor:
             #contraction with the metric
             print(f"self.rank = {self.rank}")
             if self.rank > 1:
-                new_components = sp.zeros(*self.components.shape)
+                new_components = sp.MutableDenseNDimArray.zeros(*self.components.shape)
                 new_indices = self.indices.copy()
                 new_indices[index_pos] = -1
                 for i in itertools.product(range(spacetime.dim), repeat = self.rank):
