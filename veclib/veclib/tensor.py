@@ -17,19 +17,28 @@ class Tensor:
         if isinstance(components, sp.Basic):
             self.components = components
             self.rank = 0
+            self.indices = indices
         elif isinstance(components, sp.MutableDenseNDimArray):
-            self.components = components
+            self.components = sp.MutableDenseNDimArray(components)
             self.rank = self.components.rank()
+            self.indices = indices
         elif isinstance(components, sp.matrices.dense.MutableDenseMatrix):
             self.components = sp.MutableDenseNDimArray(components.tolist())
             self.rank = self.components.rank()
+            self.indices = indices
+        elif isinstance(components, Tensor):
+            self.components = sp.MutableDenseNDimArray(components.components)
+            self.rank = components.rank
+            self.indices = components.indices
+            print(self.rank, self.indices)
         else: 
             self.components = sp.MutableDenseNDimArray(components)
             self.rank = self.components.rank()
+            self.indices = indices
 
         self.name = name
         
-        if len(indices) != self.rank: 
+        if len(self.indices) != self.rank: 
             raise ValueError(
                     f"Amount of indices {len(indices)} must match the tensor rank {self.rank}."
                 )
@@ -37,7 +46,6 @@ class Tensor:
             if not all(i in (-1,1) for i in indices):
                 raise ValueError("Indices must be a list of -1 (lower) or 1 (upper).")
 
-        self.indices = indices
 
     def __repr__(self):
         """
@@ -46,34 +54,20 @@ class Tensor:
         return f"Tensor(components={self.components}, indices={self.indices}, name={self.name})"
 
     def _repr_latex_(self):
-        partial_count = 0
-        index_counter = 0
-
-        name_str = ""
-
-        for c in self.name:
-            if c == "∂":
-                name_str += f"∂"
-                if self.indices[index_counter] == 1:
-                    name_str += "^"
-                else:
-                    name_str += "_"
-                name_str += f"{{{chr(945 + index_counter)}}}\\,"
-                index_counter += 1
-                partial_count += 1
-            else:
-                name_str += str(c)
 
         # LaTeX representation for Jupyter notebooks
-        name_str += "".join(
+        index_str = "".join(
             [
-                f"\\!\\,_{{{chr(945 + i + index_counter)}}}" if idx == -1 else f"\\!\\,^{{{chr(945 + i + index_counter)}}}"
-                for i, idx in enumerate(self.indices[index_counter:])
+                f"\\!\\,_{{{chr(945 + i)}}}" if idx == -1 else f"\\!\\,^{{{chr(945 + i)}}}"
+                for i, idx in enumerate(self.indices)
             ]
         )
         
         latex_components = sp.latex(self.components)
-        return f"${name_str} = {latex_components}$"
+        if len(self.name) > 1:
+            return f"$({self.name}){index_str} = {latex_components}$"
+        else:
+            return f"${self.name}{index_str} = {latex_components}$"
 
     def __str__(self):
         """
@@ -92,7 +86,7 @@ class Tensor:
     def get_components(self):
         return self.components
 
-    def raise_index(self, index_pos):
+    def raise_index(self, index_pos = 0):
         """
         Raises the index at index_pos from lower to upper using the global metric.
         
@@ -132,7 +126,7 @@ class Tensor:
         else:
             raise ValueError(f"Cannot raise index at position {index_pos} of {self.shortStr()}: already upper.")
 
-    def lower_index(self, index_pos):
+    def lower_index(self, index_pos = 0):
         """
         Raises the index at index_pos from lower to upper using the global metric.
         
@@ -187,8 +181,6 @@ class Tensor:
         
         # Construct the name for the resulting tensor
         product_name = self.name + "⊗" + other_tensor.name
-        product_name = product_name.replace("(", "").replace(")", "")
-        product_name = "(" + product_name + ")"
         
         # Combine the indices of both tensors
         product_indices = self.indices + other_tensor.indices
@@ -197,7 +189,7 @@ class Tensor:
         return Tensor(product_name, product_components, product_indices)
 
 
-    def swap_indices(self, index1, index2): 
+    def swap_indices(self, index1 = 0, index2 = 1): 
         # Check if the indices refer to the same type (upper or lower)
         if self.indices[index1] != self.indices[index2]:
             raise ValueError("Cannot exchange upper with lower index")
@@ -218,7 +210,9 @@ class Tensor:
         new_components = sp.permutedims(self.components, order)
 
         # Return the new Tensor with swapped indices and components
-        return Tensor(self.name, new_components, new_indices)
+        if len(self.name.replace("∂", "")) == 1:
+            return Tensor(self.name, new_components, new_indices)    
+        return Tensor("∎", new_components, new_indices)
 
     def partial_gradient(self):
         """
