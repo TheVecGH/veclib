@@ -170,15 +170,55 @@ class Tensor:
             raise ValueError(f"Cannot lower index at position {index_pos} of {self.shortStr()}: already lower.")
 
     def tensor_product(self, other_tensor):
+        """
+        Computes the tensor product of the current tensor with another tensor.
+
+        The tensor product combines the components of the two tensors into a higher-rank tensor,
+        concatenates their indices, and formats the name to reflect the operation.
+
+        Args:
+            other_tensor (Tensor): The tensor to compute the tensor product with.
+
+        Returns:
+            Tensor: A new tensor representing the tensor product.
+        """
+        # Perform the tensor product of components and store the result as a mutable dense array
         product_components = sp.MutableDenseNDimArray(sp.tensorproduct(self.components, other_tensor.components))
-        print(product_components.rank())
-        print(type(product_components))
+        
+        # Construct the name for the resulting tensor
         product_name = self.name + "⊗" + other_tensor.name
         product_name = product_name.replace("(", "").replace(")", "")
         product_name = "(" + product_name + ")"
+        
+        # Combine the indices of both tensors
         product_indices = self.indices + other_tensor.indices
 
+        # Return a new Tensor object representing the tensor product
         return Tensor(product_name, product_components, product_indices)
+
+
+    def swap_indices(self, index1, index2): 
+        # Check if the indices refer to the same type (upper or lower)
+        if self.indices[index1] != self.indices[index2]:
+            raise ValueError("Cannot exchange upper with lower index")
+        
+        # Ensure the indices are within the tensor rank
+        if index1 >= self.rank or index2 >= self.rank:
+            raise ValueError(f"One of indices ({index1}, {index2}) exceeds tensor rank {self.rank}")
+        
+        # Swap the indices
+        new_indices = self.indices.copy()
+        new_indices[index1], new_indices[index2] = new_indices[index2], new_indices[index1]
+
+        # Create an order list to reorder the axes and apply transpose
+        order = list(range(self.components.rank()))
+        order[index1], order[index2] = order[index2], order[index1]  # Swap the axes
+
+        # Apply the transpose to the components based on the new axis order
+        new_components = sp.permutedims(self.components, order)
+
+        # Return the new Tensor with swapped indices and components
+        return Tensor(self.name, new_components, new_indices)
 
     def partial_gradient(self):
         """
