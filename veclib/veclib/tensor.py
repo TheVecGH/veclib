@@ -130,7 +130,7 @@ class Tensor:
         if not isinstance(other, Tensor):
             raise TypeError("Can only add another Tensor")
         if self.indices != other.indices:
-            raise ValueError("Cannot add tensors with different index types")
+            raise ValueError(f"Cannot add tensors with different index types {self.indices}, {other.indices}")
         if self.components.shape != other.components.shape:
             raise ValueError("Cannot add tensors with different shapes")
 
@@ -143,7 +143,7 @@ class Tensor:
         if not isinstance(other, Tensor):
             raise TypeError("Can only subtract another Tensor")
         if self.indices != other.indices:
-            raise ValueError("Cannot subtract tensors with different index types")
+            raise ValueError(f"Cannot subtract tensors with different index types {self.indices}, {other.indices}")
         if self.components.shape != other.components.shape:
             raise ValueError("Cannot subtract tensors with different shapes")
 
@@ -247,6 +247,25 @@ class Tensor:
         else:
             raise ValueError(f"Cannot lower index at position {index_pos} of {self.shortStr()}: already lower.")
 
+    def contract(self, index1, index2):
+        if not index1 in range(self.rank) or not index2 in range(self.rank):
+            raise ValueError(f"Indices {index1, index2} exceed tensor rank {self.rank}")
+
+        contractable_tensor = Tensor(self.name, self)
+
+        if self.indices[index1] == self.indices[index2]:
+            if self.indices[index1] == -1:
+                contractable_tensor = contractable_tensor.raise_index(index1)
+            else:
+                contractable_tensor = contractable_tensor.lower_index(index1)
+
+        contracted_indices = [x for idx, x in enumerate(self.indices) if idx != index1 and idx != index2]
+        contracted_components = sp.tensorcontraction(contractable_tensor.components, [index1, index2])
+
+        return Tensor(self.name, contracted_components, contracted_indices)
+
+
+
     def tensor_product(self, other_tensor):
         """
         Computes the tensor product of the current tensor with another tensor.
@@ -274,10 +293,6 @@ class Tensor:
 
 
     def swap_indices(self, index1 = 0, index2 = 1): 
-        # Check if the indices refer to the same type (upper or lower)
-        if self.indices[index1] != self.indices[index2]:
-            raise ValueError("Cannot exchange upper with lower index")
-        
         # Ensure the indices are within the tensor rank
         if index1 >= self.rank or index2 >= self.rank:
             raise ValueError(f"One of indices ({index1}, {index2}) exceeds tensor rank {self.rank}")
@@ -296,7 +311,34 @@ class Tensor:
         # Return the new Tensor with swapped indices and components
         if len(self.name.replace("∂", "")) == 1:
             return Tensor(self.name, new_components, new_indices)    
-        return Tensor("∎", new_components, new_indices)
+        return Tensor("...", new_components, new_indices)
+
+    def reorder_indices(self, new_order):
+        #input check
+        if len(new_order) != self.rank:
+            raise ValueError(f"Incorrect amount of index positions specified ({self.rank} needed, {len(new_order)} given).")
+        if not all(i in range(self.rank) for i in new_order) or len(new_order) != len(set(new_order)):   
+            raise ValueError(f"Invalid order {new_order}")
+
+        new_components = sp.permutedims(self.components, new_order)
+        new_indices = [self.indices[i] for i in new_order]
+
+        return Tensor("...", new_components, new_indices)
+
+    def simplify(self):
+        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.simplify()), self.indices)
+
+    def cancel(self):
+        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.cancel()), self.indices)
+
+    def expand(self):
+        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.expand()), self.indices)
+
+    def trigsimp(self):
+        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.trigsimp()), self.indices)
+
+    def subs(self, *args)
+        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.subs(args)), self.indices)
 
     def partial_gradient(self):
         """
@@ -319,8 +361,26 @@ class Tensor:
                 result[i] = sp.diff(self.components, spacetime.coords[i]).simplify()
         return Tensor(f"∂{self.name}", result, [-1] + self.indices)
 
-    def covariant_gradient():
+    def covariant_gradient(self):
         spacetime.ensure_christoffel()
 
         if self.rank == 0:
             return Tensor(f"∇{self.name}",self.partial_gradient())
+
+        if self.rank != 0:
+            result = self.partial_gradient()
+
+            for i in range(self.rank):
+                new_order = list(range(self.rank + 1))
+                new_order.remove(0)
+                new_order.insert(i+1, 0)
+
+                if self.indices[i] == 1:
+                    result += (spacetime.christoffel * self).contract(1,3+i).reorder_indices(new_order)
+                elif self.indices[i] == -1:
+                    result -= (spacetime.christoffel * self).contract(0,3+i).reorder_indices(new_order)
+                else:
+                    raise ValueError(f"Invalid index position {self.indices[i]} encountered at index {i}.")
+                result = result.expand()
+
+            return Tensor(f"∇{self.name}", result.trigsimp().simplify(), [-1] + self.indices)

@@ -1,5 +1,4 @@
 import sympy as sp
-from .tensor import Tensor 
 
 dim = None
 metric = None
@@ -37,6 +36,7 @@ def ensure_christoffel():
         Checks whether Christoffel symbols have already been computed, if not, computes them and stores in spacetime.christoffel.
     """
     global christoffel
+    from .tensor import Tensor 
 
     if metric == None:
         raise ValueError("Metric tensor not set.")
