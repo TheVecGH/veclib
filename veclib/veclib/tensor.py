@@ -326,19 +326,35 @@ class Tensor:
         return Tensor("...", new_components, new_indices)
 
     def simplify(self):
-        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.simplify()), self.indices)
+        if self.rank > 0:
+            return Tensor(self.name, self.components.applyfunc(lambda expr: expr.simplify()), self.indices)
+        else:
+            return Tensor(self.name, self.components.simplify())
 
     def cancel(self):
-        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.cancel()), self.indices)
+        if self.rank > 0:
+            return Tensor(self.name, self.components.applyfunc(lambda expr: expr.cancel()), self.indices)
+        else:
+            return Tensor(self.name, self.components.cancel())
 
     def expand(self):
-        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.expand()), self.indices)
+        if self.rank > 0:
+            return Tensor(self.name, self.components.applyfunc(lambda expr: expr.expand()), self.indices)
+        else:
+            return Tensor(self.name, self.components.expand())
 
     def trigsimp(self):
-        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.trigsimp()), self.indices)
+        if self.rank > 0:
+            return Tensor(self.name, self.components.applyfunc(lambda expr: expr.trigsimp()), self.indices)
+        else:
+            return Tensor(self.name, self.components.trigsimp())
 
-    def subs(self, *args)
-        return Tensor(self.name, self.components.applyfunc(lambda expr: expr.subs(args)), self.indices)
+    def subs(self, *args, **kwargs):
+        if self.rank > 0:
+            return Tensor(self.name, self.components.applyfunc(lambda expr: expr.subs(*args, **kwargs)), self.indices)
+        else:
+            return Tensor(self.name, self.components.subs(*args, **kwargs))
+
 
     def partial_gradient(self):
         """
