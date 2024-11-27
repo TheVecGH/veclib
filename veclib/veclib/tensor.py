@@ -122,9 +122,22 @@ class Tensor:
         if self.rank == 0:
             self.show_component()
         else:
+            printed_components = 0
             for i in itertools.product(range(spacetime.dim), repeat = self.rank):
                 if self.components[i] != 0:
                     self.show_component([*i])
+                    printed_components += 1
+            if printed_components == 0: #if tensor is zero, write this down briefly
+                index_str = "".join(
+                    [
+                        f"\\!\\,_{{{chr(945 + i)}}}" if idx == -1 else f"\\!\\,^{{{chr(945 + i)}}}"
+                        for i, idx in enumerate(self.indices)
+                    ]
+                )
+                display(Math(self.name + index_str + "= 0"))
+                
+
+
 
     def __add__(self, other):
         if not isinstance(other, Tensor):
@@ -247,7 +260,7 @@ class Tensor:
         else:
             raise ValueError(f"Cannot lower index at position {index_pos} of {self.shortStr()}: already lower.")
 
-    def contract(self, index1, index2):
+    def contract(self, index1 = 0, index2 = 1):
         if not index1 in range(self.rank) or not index2 in range(self.rank):
             raise ValueError(f"Indices {index1, index2} exceed tensor rank {self.rank}")
 
@@ -262,7 +275,10 @@ class Tensor:
         contracted_indices = [x for idx, x in enumerate(self.indices) if idx != index1 and idx != index2]
         contracted_components = sp.tensorcontraction(contractable_tensor.components, [index1, index2])
 
-        return Tensor(self.name, contracted_components, contracted_indices)
+        result = Tensor(self.name, contracted_components, contracted_indices)
+        result = result.trigsimp()
+        result = result.simplify()
+        return result
 
 
 
@@ -309,7 +325,7 @@ class Tensor:
         new_components = sp.permutedims(self.components, order)
 
         # Return the new Tensor with swapped indices and components
-        if len(self.name.replace("∂", "")) == 1:
+        if len(self.name.replace("∂", "").replace("∇", "")) == 1:
             return Tensor(self.name, new_components, new_indices)    
         return Tensor("...", new_components, new_indices)
 
@@ -324,6 +340,28 @@ class Tensor:
         new_indices = [self.indices[i] for i in new_order]
 
         return Tensor("...", new_components, new_indices)
+
+    def symmetrise_pair(self, index1, index2, normalise = True):
+        if self.rank < 2:
+            raise ValueError("Cannot symmetrise tensor of rank lower than 2.")
+        if not all(idx in [index1, index2] in range(self.rank)):
+            raise ValueError(f"Invalid indices [{index1}, {index2}] to symmetrise.")
+        if index1 == index2:
+            raise ValueError(f"Indices to symmetrise [{index1}, {index2}], cannot be equal.")
+        if normalise:
+            return sp.Rational(1,2) * (self + self.swap_indices(index1, index2))
+        (self + self.swap_indices(index1, index2))
+
+    def antisymmetrise_pair(self, index1, index2, normalise = True):
+        if self.rank < 2:
+            raise ValueError("Cannot antisymmetrise tensor of rank lower than 2.")
+        if not all(idx in range(self.rank) for idx in [index1, index2]):
+            raise ValueError(f"Invalid indices [{index1}, {index2}] to antisymmetrise.")
+        if index1 == index2:
+            raise ValueError(f"Indices to antisymmetrise [{index1}, {index2}], cannot be equal.")
+        if normalise:
+            return sp.Rational(1, 2) * (self - self.swap_indices(index1, index2))
+        return (self - self.swap_indices(index1, index2))
 
     def simplify(self):
         if self.rank > 0:
