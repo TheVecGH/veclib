@@ -110,7 +110,7 @@ def ensure_kretschmann():
         pairs = list()
         independent_indices = list()
 
-        for i in range(dim):
+        for i in range(1,dim):
             for j in range(i):
                 pairs.append((i,j))
 

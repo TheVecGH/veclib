@@ -1,5 +1,6 @@
 import sympy as sp
 import veclib.spacetime as spacetime
+import veclib.combinatorics as combinatorics
 import itertools
 from IPython.display import display, Math
 
@@ -352,6 +353,22 @@ class Tensor:
             return sp.Rational(1,2) * (self + self.swap_indices(index1, index2))
         (self + self.swap_indices(index1, index2))
 
+    def symmetrise(self, index_positions = None, normalise = True):
+        if index_positions == None:
+            index_positions = range(self.rank)
+        if abs(sum(self.indices[i] for i in index_positions)) != len(index_positions):
+            raise ValueError("Cannot permute symmetrise a mix of upper and lower indices.")
+        result = Tensor(self.name, sp.MutableDenseNDimArray.zeros(*self.components.shape), self.indices)
+        permuted_indices = combinatorics.permute(range(self.rank), index_positions)
+        for perm in permuted_indices:
+            result += self.reorder_indices(perm)
+
+        if normalise:
+            result *= sp.Rational(1,sp.factorial(len(index_positions)))
+        result.name = self.name
+        result = result.trigsimp().simplify()
+        return result
+
     def antisymmetrise_pair(self, index1, index2, normalise = True):
         if self.rank < 2:
             raise ValueError("Cannot antisymmetrise tensor of rank lower than 2.")
@@ -362,6 +379,22 @@ class Tensor:
         if normalise:
             return sp.Rational(1, 2) * (self - self.swap_indices(index1, index2))
         return (self - self.swap_indices(index1, index2))
+
+    def antisymmetrise(self, index_positions = None, normalise = True):
+        if index_positions == None:
+            index_positions = range(self.rank)
+        if abs(sum(self.indices[i] for i in index_positions)) != len(index_positions):
+            raise ValueError("Cannot permute symmetrise a mix of upper and lower indices.")
+        result = Tensor(self.name, sp.MutableDenseNDimArray.zeros(*self.components.shape), self.indices)
+        permuted_indices = combinatorics.permute(range(self.rank), index_positions)
+        for perm in permuted_indices:
+            result += combinatorics.permutation_sign(perm) * self.reorder_indices(perm)
+
+        if normalise:
+            result *= sp.Rational(1,sp.factorial(len(index_positions)))
+        result.name = self.name
+        result = result.trigsimp().simplify()
+        return result
 
     def simplify(self):
         if self.rank > 0:
