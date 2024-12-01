@@ -138,7 +138,27 @@ class Tensor:
                 display(Math(self.name + index_str + "= 0"))
                 
 
+    def __getitem__(self, key):
+        """
+        Allows access to tensor components using Tensor[i, j, ...].
+        
+        Parameters:
+        key (tuple): The indices of the component to access.
+        
+        Returns:
+        The tensor component at the given indices.
+        """
+        return self.components[key]
 
+    def __setitem__(self, key, value):
+        """
+        Allows setting tensor components using Tensor[i, j, ...] = value.
+        
+        Parameters:
+        key (tuple): The indices of the component to set.
+        value: The value to assign to the component.
+        """
+        self.components[key] = value
 
     def __add__(self, other):
         if not isinstance(other, Tensor):
@@ -256,8 +276,8 @@ class Tensor:
                 new_indices = [-1]
                 for i in range(spacetime.dim):
                     for a in range(spacetime.dim):
-                        new_components[i] += (self.components[a] * metric[a,i]).simplify()
-            return Tensor(self.name, new_components, new_indices)
+                        new_components[i] += (self.components[a] * metric[a,i])
+            return Tensor(self.name, new_components, new_indices).simplify()
         else:
             raise ValueError(f"Cannot lower index at position {index_pos} of {self.shortStr()}: already lower.")
 
