@@ -167,7 +167,7 @@ def ensure_kretschmann():
 
 def ensure_weyl():
     """
-    computes the Weyl curvature tensor
+    if not already computed, computes the Weyl curvature tensor
     """
     global weyl
     from .tensor import Tensor
