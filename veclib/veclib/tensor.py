@@ -507,3 +507,18 @@ class Tensor:
         if vector.rank != 1:
             raise ValueError(f"Tensor {vector.name} must have rank 1, not {vector.rank}")
         return (vector * self.covariant_gradient()).contract(0, 1)
+
+    def covariant_divergence(self, index = 0):
+        """
+            returns the covariant divergence nabla_a T_(...a...) where index specifies which index of T we contract with.
+        """
+        if self.rank < 1:
+            raise ValueError("Cannot compute divergence of scalar.")
+        if index >= self.rank:
+            raise ValueError(f"Invalid index {index} for tensor of rank {self.rank}")
+        if spacetime.vol == None:
+            raise ValueError(f"Volume element not initialised.")
+        if self.rank == 1 and self.indices[0]==1:
+            return (1/spacetime.vol.components * (spacetime.vol * self).partial_gradient()).contract(0,1)
+        else:
+            return self.covariant_gradient().contract(0,index+1)

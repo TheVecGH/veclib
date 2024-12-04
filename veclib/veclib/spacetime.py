@@ -4,6 +4,7 @@ import time as tt
 #general
 dim = None
 metric = None
+vol = None
 metric_inv = None
 coords = None
 
@@ -18,16 +19,18 @@ einstein = None
 kretschmann = None
 weyl = None
 
-def set_metric_and_coordinates(g, coords_input):
+def set_metric_and_coordinates(g, coords_input, sign = -1):
     """
     Set the global metric and coordinates for the package.
     
     Args:
         g (Matrix): The metric tensor (2D sympy matrix).
         coords (tuple): A tuple of sympy symbols representing the coordinates.
+        sign: optional, default = -1, sign of det(g) to correct for sqrt(g).
     """
 
-    global metric, metric_inv, coords, dim, christoffel, riemann, ricci_t, ricci_s, einstein, kretschmann  # Use the global variables
+    global metric, metric_inv, vol, coords, dim, christoffel, riemann, ricci_t, ricci_s, einstein, kretschmann  # Use the global variables
+    from .tensor import Tensor
 
     g_components = sp.MutableDenseNDimArray(g.components)
     if g_components.rank() != 2:
@@ -37,6 +40,9 @@ def set_metric_and_coordinates(g, coords_input):
 
     metric = sp.Matrix(g_components)
     metric_inv = metric.inv()
+    vol = sp.sqrt(sp.Abs(metric.det())).simplify()
+    vol = vol.replace(sp.Abs, lambda arg: arg)
+    vol = Tensor("\\sqrt{g\\,}", vol)
     metric = sp.MutableDenseNDimArray(metric)
     metric_inv = sp.MutableDenseNDimArray(metric_inv)
     coords = coords_input
