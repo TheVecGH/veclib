@@ -1,6 +1,7 @@
 README.md
 setup.py
 veclib/__init__.py
+veclib/combinatorics.py
 veclib/spacetime.py
 veclib/tensor.py
 veclib.egg-info/PKG-INFO

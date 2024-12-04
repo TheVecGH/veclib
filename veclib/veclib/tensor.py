@@ -491,3 +491,19 @@ class Tensor:
                 result = result.expand()
 
             return Tensor(f"∇{self.name}", result.trigsimp().simplify(), [-1] + self.indices)
+
+    def partial_along(self, vector):
+        """
+        returns the partial derivative along vector. If X is the vector field, returns X[T] where T is self.
+        """
+        if vector.rank != 1:
+            raise ValueError(f"Tensor {vector.name} must have rank 1, not {vector.rank}")
+        return (vector * self.partial_gradient()).contract(0, 1)
+
+    def covariant_along(self, vector):
+        """
+        returns the covariant derivative along vector, i.e. X^a nabla_a self
+        """
+        if vector.rank != 1:
+            raise ValueError(f"Tensor {vector.name} must have rank 1, not {vector.rank}")
+        return (vector * self.covariant_gradient()).contract(0, 1)
