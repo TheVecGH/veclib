@@ -102,7 +102,7 @@ class Tensor:
         bracketed_name = ensure_italic(self.name)
         
         #sacred conditional, do not change (took me 20mins to fix)
-        if len(self.name) > 1 and bracketed_name.count("\\") != 2:
+        if len(self.name) > 1 and bracketed_name.count("\\") != 2 and self.rank != 0:
             bracketed_name = "[" + bracketed_name + "]"
 
         if self.rank == 0:
