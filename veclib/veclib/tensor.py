@@ -498,15 +498,19 @@ class Tensor:
         """
         if vector.rank != 1:
             raise ValueError(f"Tensor {vector.name} must have rank 1, not {vector.rank}")
-        return (vector * self.partial_gradient()).contract(0, 1)
+        result = (vector * self.partial_gradient()).contract(0, 1)
+        result.name = f"∂_{{{vector.name}}}{self.name}"
+        return result
 
     def covariant_along(self, vector):
         """
-        returns the covariant derivative along vector, i.e. X^a nabla_a self
+        returns the covariant derivative along vector, i.e. nabla_X self
         """
         if vector.rank != 1:
             raise ValueError(f"Tensor {vector.name} must have rank 1, not {vector.rank}")
-        return (vector * self.covariant_gradient()).contract(0, 1)
+        result = (vector * self.covariant_gradient()).contract(0, 1)
+        result.name = f"∇_{{{vector.name}}}{self.name}"
+        return result
 
     def covariant_divergence(self, index = 0):
         """
