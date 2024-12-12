@@ -186,6 +186,21 @@ class Tensor:
 
         return Tensor(f"({self.name} - {other.name})", new_components, self.indices)
 
+    def __neg__(self):
+        """
+        Unary negation of the tensor. Returns a new Tensor object with negated components.
+
+        Returns:
+        Tensor
+            A new Tensor object where each component is negated.
+        """
+        # Negate all components of the tensor
+        negated_components = -self.components
+
+        # Create a new Tensor object with the negated components
+        return Tensor(f"-{self.name}", negated_components, self.indices)
+
+
     def __mul__(self, other):
         if isinstance(other, Tensor):
             # Tensor product
@@ -528,7 +543,17 @@ class Tensor:
             return self.covariant_gradient().contract(0,index+1)
 
     def diff(self, symbol):
+        """
+        Differentiates the tensor components with respect to a given symbol.
 
+        Parameters:
+        symbol : sympy.Symbol
+            The variable with respect to which differentiation is performed.
+
+        Returns:
+        Tensor
+            A new Tensor object representing the derivative of the original tensor.
+        """
         name = "∂_{" + sp.printing.latex(symbol) + "} " + self.name
         result = Tensor(name, self.components, self.indices)
 
