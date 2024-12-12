@@ -526,3 +526,12 @@ class Tensor:
             return (1/spacetime.vol.components * (spacetime.vol * self).partial_gradient()).contract(0,1)
         else:
             return self.covariant_gradient().contract(0,index+1)
+
+    def diff(self, symbol):
+
+        name = "∂_{" + sp.printing.latex(symbol) + "} " + self.name
+        result = Tensor(name, self.components, self.indices)
+
+        result.components = result.components.applyfunc(lambda expr: sp.diff(expr, symbol))
+
+        return result
