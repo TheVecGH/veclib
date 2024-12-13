@@ -542,6 +542,13 @@ class Tensor:
         else:
             return self.covariant_gradient().contract(0,index+1)
 
+    def box(self):
+        if self.rank == 0:
+            result = 1/spacetime.vol.components * ((spacetime.vol * Tensor("g", spacetime.metric_inv, [1,1]) * self.partial_gradient()).contract(1,2)).partial_gradient().contract(0,1)
+        else:
+            result = self.partial_gradient().partial_gradient().contract(0,1)
+        result.name = f"☐_g {self.name}"
+        return result
     def diff(self, symbol):
         """
         Differentiates the tensor components with respect to a given symbol.
