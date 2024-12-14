@@ -215,7 +215,12 @@ class Tensor:
         elif isinstance(other, (int, float, sp.Basic)):
             # Element-wise scalar multiplication
             new_components = self.components * other
-            return Tensor(f"({other}{self.name})", new_components, self.indices)
+            other_name = ""
+            if isinstance(other, sp.Basic):
+                other_name = sp.latex(other)
+            else:
+                other_name = str(other)
+            return Tensor(f"({other_name}{self.name})", new_components, self.indices)
         else:
             raise TypeError(f"Cannot multiply Tensor with type {type(other)}")
 
