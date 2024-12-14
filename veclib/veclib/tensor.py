@@ -165,7 +165,7 @@ class Tensor:
             raise TypeError("Can only add another Tensor")
         if self.indices != other.indices:
             raise ValueError(f"Cannot add tensors with different index types {self.indices}, {other.indices}")
-        if self.components.shape != other.components.shape:
+        if self.rank != other.rank:
             raise ValueError("Cannot add tensors with different shapes")
 
         # Perform component-wise addition
@@ -178,7 +178,7 @@ class Tensor:
             raise TypeError("Can only subtract another Tensor")
         if self.indices != other.indices:
             raise ValueError(f"Cannot subtract tensors with different index types {self.indices}, {other.indices}")
-        if self.components.shape != other.components.shape:
+        if self.rank != other.rank:
             raise ValueError("Cannot subtract tensors with different shapes")
 
         # Perform component-wise subtraction
